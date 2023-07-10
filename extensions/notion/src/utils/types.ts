@@ -70,6 +70,7 @@ export interface Page {
   parent_page_id?: string;
   parent_database_id?: string;
   last_edited_time?: number;
+  last_edited_user?: string;
   title: string | null;
   icon_emoji: string | null;
   icon_file: string | null;

@@ -1,43 +1,32 @@
 import { ActionPanel, Detail, Action, Icon } from "@raycast/api";
-import { useEffect, useState } from "react";
-import { useSetAtom } from "jotai";
-import { fetchPageContent } from "../utils/notion";
-import { Page, PageContent } from "../utils/types";
-import { recentlyOpenedPagesAtom } from "../utils/state";
+import { useCachedPromise } from "@raycast/utils";
+import { useEffect } from "react";
+
+import { fetchPageContent, getPageName } from "../utils/notion";
 import { handleOnOpenPage } from "../utils/openPage";
+import { Page } from "../utils/types";
+
 import { AppendToPageForm } from "./forms";
 
-export function PageDetail(props: { page: Page }): JSX.Element {
-  const { page } = props;
-  const pageName = (page.icon_emoji ? page.icon_emoji + " " : "") + (page.title ? page.title : "Untitled");
+export function PageDetail({ page, setRecentPage }: { page: Page; setRecentPage: (page: Page) => Promise<void> }) {
+  const pageName = getPageName(page);
 
-  const [pageContent, setPageContent] = useState<PageContent>();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const storeRecentlyOpenedPage = useSetAtom(recentlyOpenedPagesAtom);
+  const { data, isLoading, mutate } = useCachedPromise(
+    async (id) => {
+      const fetchedPageContent = await fetchPageContent(id);
+
+      return fetchedPageContent && fetchedPageContent.markdown ? fetchedPageContent : undefined;
+    },
+    [page.id],
+  );
 
   useEffect(() => {
-    storeRecentlyOpenedPage(page);
+    setRecentPage(page);
   }, [page.id]);
-
-  // Load page content
-  useEffect(() => {
-    const getPageContent = async () => {
-      setIsLoading(true);
-
-      const fetchedPageContent = await fetchPageContent(page.id);
-
-      if (fetchedPageContent && fetchedPageContent.markdown) {
-        setPageContent(fetchedPageContent);
-      }
-
-      setIsLoading(false);
-    };
-    getPageContent();
-  }, []);
 
   return (
     <Detail
-      markdown={`# ${page.title}\n` + (pageContent ? pageContent.markdown : "*Loading...*")}
+      markdown={`# ${page.title}\n` + (data ? data.markdown : "*Loading...*")}
       isLoading={isLoading}
       navigationTitle={" →  " + pageName}
       actions={
@@ -48,7 +37,7 @@ export function PageDetail(props: { page: Page }): JSX.Element {
                 title="Open in Notion"
                 icon={"notion-logo.png"}
                 onAction={() => {
-                  handleOnOpenPage(page, storeRecentlyOpenedPage);
+                  handleOnOpenPage(page, setRecentPage);
                 }}
               />
             </ActionPanel.Section>
@@ -57,14 +46,7 @@ export function PageDetail(props: { page: Page }): JSX.Element {
                 title="Append Content to Page"
                 icon={Icon.Plus}
                 shortcut={{ modifiers: ["cmd", "shift"], key: "n" }}
-                target={
-                  <AppendToPageForm
-                    page={page}
-                    onContentUpdate={(markdown) =>
-                      setPageContent((prev) => ({ ...prev, markdown: (prev?.markdown || "") + markdown }))
-                    }
-                  />
-                }
+                target={<AppendToPageForm page={page} onContentUpdate={mutate} />}
               />
             </ActionPanel.Section>
             <ActionPanel.Section>

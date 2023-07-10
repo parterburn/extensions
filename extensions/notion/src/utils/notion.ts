@@ -1,15 +1,16 @@
-import { showToast, Color, Form, Toast, OAuth, getPreferenceValues, Image, Icon } from "@raycast/api";
 import { Client, isNotionClientError } from "@notionhq/client";
-import fetch from "node-fetch";
-import moment from "moment";
+import { BlockObjectRequest } from "@notionhq/client/build/src/api-endpoints";
+import { showToast, Color, Form, Toast, OAuth, getPreferenceValues, Image, Icon } from "@raycast/api";
 import { markdownToBlocks } from "@tryfabric/martian";
+import { format, formatDistanceToNow, subMinutes } from "date-fns";
+import fetch from "node-fetch";
 import { NotionToMarkdown } from "notion-to-md";
+
 import {
   Page,
   Database,
   DatabaseProperty,
   DatabasePropertyOption,
-  PageContent,
   User,
   PagePropertyType,
   supportedPropTypes,
@@ -35,7 +36,7 @@ let notion = new Client({
 
 let alreadyAuthorizing: Promise<void> | false = false;
 
-export async function authorize(): Promise<void> {
+export async function authorize() {
   // we are authorized with a token in the preference
   if (preferenceToken) {
     return;
@@ -80,7 +81,7 @@ export async function authorize(): Promise<void> {
   await alreadyAuthorizing;
 }
 
-export async function fetchTokens(authRequest: OAuth.AuthorizationRequest, code: string): Promise<OAuth.TokenResponse> {
+export async function fetchTokens(authRequest: OAuth.AuthorizationRequest, code: string) {
   const response = await fetch("https://notion.oauth-proxy.raycast.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -104,7 +105,7 @@ function isNotNullOrUndefined<T>(input: null | undefined | T): input is T {
 }
 
 // Fetch databases
-export async function fetchDatabases(): Promise<Database[]> {
+export async function fetchDatabases() {
   try {
     await authorize();
     const databases = await notion.search({
@@ -126,7 +127,7 @@ export async function fetchDatabases(): Promise<Database[]> {
             icon_emoji: x.icon?.type === "emoji" ? x.icon.emoji : null,
             icon_file: x.icon?.type === "file" ? x.icon.file.url : null,
             icon_external: x.icon?.type === "external" ? x.icon.external.url : null,
-          } as Database)
+          }) as Database,
       );
   } catch (err: unknown) {
     console.error(err);
@@ -146,7 +147,7 @@ export async function fetchDatabases(): Promise<Database[]> {
 }
 
 // Fetch database properties
-export async function fetchDatabaseProperties(databaseId: string): Promise<DatabaseProperty[]> {
+export async function fetchDatabaseProperties(databaseId: string) {
   try {
     await authorize();
     const database = await notion.databases.retrieve({ database_id: databaseId });
@@ -175,7 +176,7 @@ export async function fetchDatabaseProperties(databaseId: string): Promise<Datab
             name: "No Selection",
           });
           databaseProperty.options = (databaseProperty.options as DatabasePropertyOption[]).concat(
-            property.select.options
+            property.select.options,
           );
           break;
         case "multi_select":
@@ -213,8 +214,8 @@ export async function fetchDatabaseProperties(databaseId: string): Promise<Datab
 export async function queryDatabase(
   databaseId: string,
   query: string | undefined,
-  sort: "last_edited_time" | "created_time" = "last_edited_time"
-): Promise<Page[]> {
+  sort: "last_edited_time" | "created_time" = "last_edited_time",
+) {
   try {
     await authorize();
     const database = await notion.databases.query({
@@ -263,7 +264,7 @@ type DatabaseCreateProperties<T> = T extends { parent: { type?: "database_id" };
 type DatabaseCreateProperty = UnwrapRecord<DatabaseCreateProperties<CreateRequest>>;
 
 // Create database page
-export async function createDatabasePage(values: Form.Values): Promise<Page | undefined> {
+export async function createDatabasePage(values: Form.Values) {
   try {
     await authorize();
     const { database, content, ...props } = values;
@@ -274,7 +275,8 @@ export async function createDatabasePage(values: Form.Values): Promise<Page | un
     };
 
     if (content) {
-      arg.children = markdownToBlocks(content);
+      // TODO: why do I need to cast this?
+      arg.children = markdownToBlocks(content) as BlockObjectRequest[];
     }
 
     Object.keys(props).forEach((formId) => {
@@ -337,12 +339,16 @@ export async function createDatabasePage(values: Form.Values): Promise<Page | un
             type DatePropertyTimeZone = Required<DateProperty["time_zone"]>;
             arg.properties[propId] = {
               date: {
-                start: moment(value).subtract(new Date().getTimezoneOffset(), "minutes").toISOString(),
+                start: format(
+                  subMinutes(new Date(value), new Date().getTimezoneOffset()),
+                  "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                ),
                 time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone as DatePropertyTimeZone,
               },
             };
             break;
           }
+
           case "checkbox":
             arg.properties[propId] = {
               checkbox: value === 1 ? true : false,
@@ -394,11 +400,43 @@ export async function createDatabasePage(values: Form.Values): Promise<Page | un
   }
 }
 
+export async function deletePage(pageId: string) {
+  try {
+    await authorize();
+
+    await showToast({
+      style: Toast.Style.Animated,
+      title: "Deleting page",
+    });
+
+    await notion.pages.update({
+      page_id: pageId,
+      archived: true,
+    });
+
+    await showToast({
+      style: Toast.Style.Success,
+      title: "Page deleted",
+    });
+  } catch (err: unknown) {
+    console.error(err);
+    if (isNotionClientError(err)) {
+      showToast({
+        style: Toast.Style.Failure,
+        title: err.message,
+      });
+    } else {
+      showToast({
+        style: Toast.Style.Failure,
+        title: "Failed to delete page",
+      });
+    }
+    return undefined;
+  }
+}
+
 // Patch page
-export async function patchPage(
-  pageId: string,
-  properties: Parameters<typeof notion.pages.update>[0]["properties"]
-): Promise<Page | undefined> {
+export async function patchPage(pageId: string, properties: Parameters<typeof notion.pages.update>[0]["properties"]) {
   try {
     await authorize();
     const page = await notion.pages.update({
@@ -425,7 +463,7 @@ export async function patchPage(
 }
 
 // Search pages
-export async function search(query: string | undefined): Promise<Page[]> {
+export async function search(query: string | undefined) {
   try {
     await authorize();
     const database = await notion.search({
@@ -456,7 +494,7 @@ export async function search(query: string | undefined): Promise<Page[]> {
 }
 
 // Fetch page content
-export async function fetchPageContent(pageId: string): Promise<PageContent | undefined> {
+export async function fetchPageContent(pageId: string) {
   try {
     await authorize();
     const { results } = await notion.blocks.children.list({
@@ -466,7 +504,8 @@ export async function fetchPageContent(pageId: string): Promise<PageContent | un
     const n2m = new NotionToMarkdown({ notionClient: notion });
 
     return {
-      markdown: results.length === 0 ? "*Page is empty*" : n2m.toMarkdownString(await n2m.blocksToMarkdown(results)),
+      markdown:
+        results.length === 0 ? "*Page is empty*" : n2m.toMarkdownString(await n2m.blocksToMarkdown(results)).parent,
     };
   } catch (err: unknown) {
     console.error(err);
@@ -485,8 +524,28 @@ export async function fetchPageContent(pageId: string): Promise<PageContent | un
   }
 }
 
+export async function fetchComments(blockId: string) {
+  try {
+    await authorize();
+    return notion.comments.list({ block_id: blockId });
+  } catch (err: unknown) {
+    if (isNotionClientError(err)) {
+      showToast({
+        style: Toast.Style.Failure,
+        title: err.message,
+      });
+    } else {
+      showToast({
+        style: Toast.Style.Failure,
+        title: "Failed to fetch page content",
+      });
+    }
+    return undefined;
+  }
+}
+
 // Fetch users
-export async function fetchUsers(): Promise<User[]> {
+export async function fetchUsers() {
   try {
     await authorize();
     const users = await notion.users.list({});
@@ -500,7 +559,7 @@ export async function fetchUsers(): Promise<User[]> {
             name: x.name,
             type: x.type,
             avatar_url: x.avatar_url,
-          } as User)
+          }) as User,
       );
   } catch (err: unknown) {
     console.error(err);
@@ -519,13 +578,14 @@ export async function fetchUsers(): Promise<User[]> {
   }
 }
 
-export async function appendToPage(pageId: string, params: { content: string }): Promise<{ markdown: string }> {
+export async function appendToPage(pageId: string, params: { content: string }) {
   try {
     await authorize();
 
     const arg: Parameters<typeof notion.blocks.children.append>[0] = {
       block_id: pageId,
-      children: markdownToBlocks(params.content),
+      // TODO: why do I need to cast this?
+      children: markdownToBlocks(params.content) as BlockObjectRequest[],
     };
 
     const { results } = await notion.blocks.children.append(arg);
@@ -562,6 +622,10 @@ function pageMapper(jsonPage: NotionObject): Page {
     parent_database_id:
       "parent" in jsonPage && "database_id" in jsonPage.parent ? jsonPage.parent.database_id : undefined,
     last_edited_time: "last_edited_time" in jsonPage ? new Date(jsonPage.last_edited_time).getTime() : undefined,
+    last_edited_user:
+      "last_edited_by" in jsonPage && jsonPage.last_edited_by.object === "user"
+        ? jsonPage.last_edited_by.id
+        : undefined,
     icon_emoji: "icon" in jsonPage && jsonPage.icon?.type === "emoji" ? jsonPage.icon.emoji : null,
     icon_file: "icon" in jsonPage && jsonPage.icon?.type === "file" ? jsonPage.icon.file.url : null,
     icon_external: "icon" in jsonPage && jsonPage.icon?.type === "external" ? jsonPage.icon.external.url : null,
@@ -593,7 +657,7 @@ export function notionColorToTintColor(notionColor: string | undefined): Color {
   const colorMapper = {
     default: Color.PrimaryText,
     gray: Color.PrimaryText,
-    brown: Color.Brown,
+    brown: Color.Yellow,
     red: Color.Red,
     blue: Color.Blue,
     green: Color.Green,
@@ -603,10 +667,7 @@ export function notionColorToTintColor(notionColor: string | undefined): Color {
     pink: Color.Magenta,
   } as Record<string, Color>;
 
-  if (notionColor === undefined) {
-    return colorMapper["default"];
-  }
-  return colorMapper[notionColor];
+  return notionColor ? colorMapper[notionColor] : colorMapper["default"];
 }
 
 export function extractPropertyValue(
@@ -630,7 +691,7 @@ export function extractPropertyValue(
     | {
         type: "boolean";
         boolean: boolean | null;
-      }
+      },
 ): string | null {
   if (!property) {
     return null;
@@ -650,7 +711,7 @@ export function extractPropertyValue(
     case "phone_number":
       return property.phone_number;
     case "date":
-      return moment(property.date?.start).fromNow();
+      return formatDistanceToNow(property.date ? new Date(property.date?.start) : new Date(), { addSuffix: true });
     case "checkbox":
       return property.checkbox ? "☑" : "☐";
     case "select":
@@ -677,5 +738,9 @@ export function pageIcon(page: Page): Image.ImageLike {
     ? page.icon_external
     : page.object === "database"
     ? Icon.List
-    : Icon.TextDocument;
+    : Icon.BlankDocument;
+}
+
+export function getPageName(page: Page): string {
+  return (page.icon_emoji ? page.icon_emoji + " " : "") + (page.title ? page.title : "Untitled");
 }
