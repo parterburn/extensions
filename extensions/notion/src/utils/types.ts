@@ -69,6 +69,7 @@ export interface Page {
   id: string;
   parent_page_id?: string;
   parent_database_id?: string;
+  created_by?: string;
   last_edited_time?: number;
   last_edited_user?: string;
   title: string | null;

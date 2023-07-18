@@ -618,6 +618,7 @@ function pageMapper(jsonPage: NotionObject): Page {
     id: jsonPage.id,
     title: "Untitled",
     properties: {},
+    created_by: "created_by" in jsonPage && jsonPage.created_by.object === "user" ? jsonPage.created_by.id : undefined,
     parent_page_id: "parent" in jsonPage && "page_id" in jsonPage.parent ? jsonPage.parent.page_id : undefined,
     parent_database_id:
       "parent" in jsonPage && "database_id" in jsonPage.parent ? jsonPage.parent.database_id : undefined,

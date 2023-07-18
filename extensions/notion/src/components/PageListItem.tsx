@@ -88,7 +88,7 @@ export function PageListItem({
               <Action.Push
                 title="Preview Page"
                 icon={Icon.BlankDocument}
-                target={<PageDetail page={page} setRecentPage={setRecentPage} />}
+                target={<PageDetail page={page} setRecentPage={setRecentPage} users={users} />}
               />
             )}
             <Action
