@@ -1,3 +1,4 @@
+import { FormulaPropertyItemObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 import { ActionPanel, Detail, Action, Icon, Image, Color } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
 import { format, formatDistanceToNow } from "date-fns";
@@ -5,7 +6,7 @@ import { useEffect, useState } from "react";
 
 import { fetchPageContent, getPageName, notionColorToTintColor } from "../utils/notion";
 import { handleOnOpenPage } from "../utils/openPage";
-import { Page, User } from "../utils/types";
+import { Page, PagePropertyType, User } from "../utils/types";
 
 import { AppendToPageForm } from "./forms";
 
@@ -15,8 +16,6 @@ type PageDetailProps = {
   users?: User[];
 };
 
-// TODO: support files, formula, relations, rollup, status
-// TODO: order properties
 export function PageDetail({ page, setRecentPage, users }: PageDetailProps) {
   const [showMetadata, setShowMetadata] = useState(false);
 
@@ -60,109 +59,8 @@ export function PageDetail({ page, setRecentPage, users }: PageDetailProps) {
                     }`}
                   />
                 ) : null}
-
                 {Object.entries(page.properties).map(([title, value]) => {
-                  switch (value.type) {
-                    case "checkbox":
-                      return (
-                        <Detail.Metadata.Label
-                          key={value.id}
-                          title={title}
-                          icon={value.checkbox ? { source: Icon.CheckCircle, tintColor: Color.Green } : Icon.Circle}
-                          text={value.checkbox ? "Checked" : "Unchecked"}
-                        />
-                      );
-                    case "date": {
-                      if (!value.date) return null;
-
-                      const startDate = new Date(value.date.start);
-                      const endDate = value.date.end ? new Date(value.date.end) : undefined;
-
-                      let displayedDate = format(startDate, "MMMM dd yyyy");
-
-                      if (endDate) {
-                        displayedDate += ` → ${format(endDate, "MMMM d, yyyy")}`;
-                      }
-
-                      return (
-                        <Detail.Metadata.Label key={value.id} title={title} icon={Icon.Calendar} text={displayedDate} />
-                      );
-                    }
-                    case "email":
-                      return value.email ? (
-                        <Detail.Metadata.Link
-                          key={value.id}
-                          title={title}
-                          text={value.email}
-                          target={`mailto:${value.email}`}
-                        />
-                      ) : null;
-                    case "multi_select":
-                      return value.multi_select.length > 0 ? (
-                        <Detail.Metadata.TagList key={value.id} title={title}>
-                          {value.multi_select.map((option) => {
-                            return (
-                              <Detail.Metadata.TagList.Item key={option.id} text={option.name} color={option.color} />
-                            );
-                          })}
-                        </Detail.Metadata.TagList>
-                      ) : (
-                        <Detail.Metadata.Label key={value.id} title={title} text="None" />
-                      );
-                    case "number":
-                      return value.number ? (
-                        <Detail.Metadata.Label key={value.id} title={title} text={String(value.number)} />
-                      ) : null;
-                    case "people":
-                      return value.people.length > 0 ? (
-                        <Detail.Metadata.TagList key={value.id} title={title}>
-                          {value.people.map((person) => {
-                            const user = users?.find((u) => u.id === person.id);
-                            return user ? (
-                              <Detail.Metadata.TagList.Item
-                                key={person.id}
-                                text={user.name ?? "Unknown"}
-                                icon={
-                                  user.avatar_url ? { source: user.avatar_url, mask: Image.Mask.Circle } : Icon.Person
-                                }
-                              />
-                            ) : null;
-                          })}
-                        </Detail.Metadata.TagList>
-                      ) : (
-                        <Detail.Metadata.Label key={value.id} title={title} text="None" />
-                      );
-                    case "phone_number":
-                      return value.phone_number ? (
-                        <Detail.Metadata.Link
-                          key={value.id}
-                          title={title}
-                          text={value.phone_number}
-                          target={`tel:${value.phone_number}`}
-                        />
-                      ) : null;
-                    case "rich_text":
-                      return value.rich_text.length > 0 ? (
-                        <Detail.Metadata.Label key={value.id} title={title} text={value.rich_text[0].plain_text} />
-                      ) : null;
-                    case "select":
-                      return value.select ? (
-                        <Detail.Metadata.TagList key={value.id} title={title}>
-                          <Detail.Metadata.TagList.Item
-                            color={notionColorToTintColor(value.select.color)}
-                            text={value.select.name}
-                          />
-                        </Detail.Metadata.TagList>
-                      ) : null;
-                    case "title":
-                      return value.title.length > 0 ? (
-                        <Detail.Metadata.Label key={value.id} title={title} text={value.title[0].plain_text} />
-                      ) : null;
-                    case "url":
-                      return value.url ? (
-                        <Detail.Metadata.Link key={value.id} title={title} text={title} target={value.url} />
-                      ) : null;
-                  }
+                  return getMetadata(title, value, users);
                 })}
 
                 {createdByUser ? (
@@ -219,4 +117,98 @@ export function PageDetail({ page, setRecentPage, users }: PageDetailProps) {
       }
     />
   );
+}
+
+function getMetadata(
+  title: string,
+  value: PagePropertyType | (FormulaPropertyItemObjectResponse["formula"] & { id: string }),
+  users?: User[],
+): JSX.Element | null {
+  switch (value.type) {
+    case "checkbox":
+      return (
+        <Detail.Metadata.Label
+          key={value.id}
+          title={title}
+          icon={value.checkbox ? { source: Icon.CheckCircle, tintColor: Color.Green } : Icon.Circle}
+          text={value.checkbox ? "Checked" : "Unchecked"}
+        />
+      );
+    case "date": {
+      if (!value.date) return null;
+
+      const startDate = new Date(value.date.start);
+      const endDate = value.date.end ? new Date(value.date.end) : undefined;
+
+      let displayedDate = format(startDate, "MMMM dd yyyy");
+
+      if (endDate) {
+        displayedDate += ` → ${format(endDate, "MMMM d, yyyy")}`;
+      }
+
+      return <Detail.Metadata.Label key={value.id} title={title} icon={Icon.Calendar} text={displayedDate} />;
+    }
+    case "email":
+      return value.email ? (
+        <Detail.Metadata.Link key={value.id} title={title} text={value.email} target={`mailto:${value.email}`} />
+      ) : null;
+    case "formula":
+      return value.formula ? getMetadata(title, { id: value.id, ...value.formula }, users) : null;
+    case "multi_select":
+      return value.multi_select.length > 0 ? (
+        <Detail.Metadata.TagList key={value.id} title={title}>
+          {value.multi_select.map((option) => {
+            return <Detail.Metadata.TagList.Item key={option.id} text={option.name} color={option.color} />;
+          })}
+        </Detail.Metadata.TagList>
+      ) : (
+        <Detail.Metadata.Label key={value.id} title={title} text="None" />
+      );
+    case "number":
+      return value.number ? <Detail.Metadata.Label key={value.id} title={title} text={String(value.number)} /> : null;
+    case "people":
+      return value.people.length > 0 ? (
+        <Detail.Metadata.TagList key={value.id} title={title}>
+          {value.people.map((person) => {
+            const user = users?.find((u) => u.id === person.id);
+            return user ? (
+              <Detail.Metadata.TagList.Item
+                key={person.id}
+                text={user.name ?? "Unknown"}
+                icon={user.avatar_url ? { source: user.avatar_url, mask: Image.Mask.Circle } : Icon.Person}
+              />
+            ) : null;
+          })}
+        </Detail.Metadata.TagList>
+      ) : (
+        <Detail.Metadata.Label key={value.id} title={title} text="None" />
+      );
+    case "phone_number":
+      return value.phone_number ? (
+        <Detail.Metadata.Link
+          key={value.id}
+          title={title}
+          text={value.phone_number}
+          target={`tel:${value.phone_number}`}
+        />
+      ) : null;
+    case "rich_text":
+      return value.rich_text.length > 0 ? (
+        <Detail.Metadata.Label key={value.id} title={title} text={value.rich_text[0].plain_text} />
+      ) : null;
+    case "select":
+      return value.select ? (
+        <Detail.Metadata.TagList key={value.id} title={title}>
+          <Detail.Metadata.TagList.Item color={notionColorToTintColor(value.select.color)} text={value.select.name} />
+        </Detail.Metadata.TagList>
+      ) : null;
+    case "title":
+      return value.title.length > 0 ? (
+        <Detail.Metadata.Label key={value.id} title={title} text={value.title[0].plain_text} />
+      ) : null;
+    case "url":
+      return value.url ? <Detail.Metadata.Link key={value.id} title={title} text={title} target={value.url} /> : null;
+    default:
+      return null;
+  }
 }

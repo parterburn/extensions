@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { useDatabaseProperties, useDatabasesView } from "../hooks";
 import { queryDatabase, getPageName } from "../utils/notion";
-import { Page } from "../utils/types";
+import { Page, User } from "../utils/types";
 
 import { DatabaseView } from "./DatabaseView";
 import { CreateDatabaseForm } from "./forms";
@@ -12,9 +12,10 @@ import { CreateDatabaseForm } from "./forms";
 type DatabaseListProps = {
   databasePage: Page;
   setRecentPage: (page: Page) => Promise<void>;
+  users?: User[];
 };
 
-export function DatabaseList({ databasePage, setRecentPage }: DatabaseListProps) {
+export function DatabaseList({ databasePage, setRecentPage, users }: DatabaseListProps) {
   const databaseId = databasePage.id;
   const databaseName = getPageName(databasePage);
   const [searchText, setSearchText] = useState<string>();
@@ -69,6 +70,7 @@ export function DatabaseList({ databasePage, setRecentPage }: DatabaseListProps)
         sort={sort}
         mutate={mutate}
         setRecentPage={setRecentPage}
+        users={users}
       />
 
       <List.EmptyView

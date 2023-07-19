@@ -1,9 +1,10 @@
+import { FormulaPropertyItemObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 import { ActionPanel, Icon, List, Action, Image, Color, confirmAlert } from "@raycast/api";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 
-import { deletePage, extractPropertyValue, pageIcon } from "../utils/notion";
+import { deletePage, notionColorToTintColor, pageIcon } from "../utils/notion";
 import { handleOnOpenPage } from "../utils/openPage";
-import { DatabaseView, Page, DatabaseProperty, User } from "../utils/types";
+import { DatabaseView, Page, DatabaseProperty, User, PagePropertyType } from "../utils/types";
 
 import { DatabaseList } from "./DatabaseList";
 import PageComments from "./PageComments";
@@ -53,13 +54,20 @@ export function PageListItem({
   }
 
   if (databaseView && databaseView.properties) {
-    const accessoryTitles = Object.keys(databaseView.properties)
-      .map((propId) => Object.values(page.properties).find((x) => x.id == propId))
-      .map((prop: any | undefined) => (prop ? extractPropertyValue(prop) : undefined))
-      .filter((value): value is string => typeof value === "string");
+    const propertyAccessories = Object.keys(databaseView.properties)
+      .map((propId) =>
+        Object.entries(page.properties).find(([, e]) => {
+          return e.id == propId;
+        }),
+      )
+      .map((property) => {
+        const [title, value] = property ?? [];
+        if (!value || !title) return undefined;
+        return getPropertyAccessory(value, title, users);
+      })
+      .filter(Boolean);
 
-    keywords.push(...accessoryTitles);
-    accessories.push(...accessoryTitles.map((text) => ({ text })));
+    accessories.push(...(propertyAccessories.flat() as List.Item.Accessory[]));
   }
 
   const quickEditProperties = databaseProperties?.filter((property) =>
@@ -82,7 +90,7 @@ export function PageListItem({
               <Action.Push
                 title="Navigate to Database"
                 icon={Icon.List}
-                target={<DatabaseList databasePage={page} setRecentPage={setRecentPage} />}
+                target={<DatabaseList databasePage={page} setRecentPage={setRecentPage} users={users} />}
               />
             ) : (
               <Action.Push
@@ -218,4 +226,72 @@ export function PageListItem({
       accessories={accessories}
     />
   );
+}
+
+function getPropertyAccessory(
+  property: PagePropertyType | FormulaPropertyItemObjectResponse["formula"],
+  title: string,
+  users?: User[],
+): List.Item.Accessory | List.Item.Accessory[] | undefined {
+  switch (property.type) {
+    case "checkbox":
+      return {
+        icon: property.checkbox ? Icon.CheckCircle : Icon.Circle,
+        tooltip: `${title}: ${property.checkbox ? "Checked" : "Unchecked"}`,
+      };
+    case "date": {
+      if (!property.date) return;
+      const start = new Date(property.date.start);
+      return {
+        text: formatDistanceToNow(start, { addSuffix: true }),
+        tooltip: `${title}: ${format(start, "EEE d MMM yyyy")}`,
+      };
+    }
+    case "email":
+      if (!property.email) return;
+      return { text: property.email, tooltip: `${title}: ${property.email}` };
+    case "formula":
+      if (!property.formula) return;
+      return getPropertyAccessory(property.formula, title);
+    case "multi_select":
+      return property.multi_select.map((option) => {
+        return {
+          tag: { value: option.name, color: notionColorToTintColor(option.color) },
+          tooltip: `${title}: ${option.name}`,
+        };
+      });
+    case "number":
+      if (!property.number) return;
+      return { text: property.number.toString(), tooltip: `${title}: ${property.number}` };
+    case "people":
+      return property.people.map((person) => {
+        const user = users?.find((u) => u.id === person.id);
+        return {
+          text: user?.name ?? "Unknown",
+          icon: user?.avatar_url ? { source: user.avatar_url, mask: Image.Mask.Circle } : Icon.Person,
+          tooltip: `${title}: ${user?.name ?? "Unknown"}`,
+        };
+      });
+    case "phone_number":
+      if (!property.phone_number) return;
+      return { text: property.phone_number, tooltip: `${title}: ${property.phone_number}` };
+    case "rich_text": {
+      const text = property.rich_text[0].plain_text;
+      if (!property.rich_text[0]) return;
+      return { text, tooltip: `${title}: ${text}` };
+    }
+    case "title": {
+      const text = property.title[0].plain_text ?? "Untitled";
+      return { text, tooltip: `${title}: ${text}` };
+    }
+    case "url":
+      if (!property.url) return;
+      return { text: property.url, tooltip: `${title}: ${property.url}` };
+    case "select":
+      if (!property.select) return;
+      return {
+        tag: { value: property.select.name, color: notionColorToTintColor(property.select.color) },
+        tooltip: `${title}: ${property.select.name}`,
+      };
+  }
 }

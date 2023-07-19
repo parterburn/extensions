@@ -1,7 +1,7 @@
 import { List, Image, Color } from "@raycast/api";
 
 import { notionColorToTintColor } from "../utils/notion";
-import { Page, DatabasePropertyOption, DatabaseProperty, DatabaseView } from "../utils/types";
+import { Page, DatabasePropertyOption, DatabaseProperty, DatabaseView, User } from "../utils/types";
 
 import { PageListItem } from "./PageListItem";
 import { ActionEditPageProperty } from "./actions";
@@ -14,11 +14,13 @@ type DatabaseViewProps = {
   setDatabaseView?: (view: DatabaseView) => Promise<void>;
   setRecentPage: (page: Page) => Promise<void>;
   mutate: () => Promise<void>;
+  users?: User[];
   sort?: "last_edited_time" | "created_time";
 };
 
 export function DatabaseView(props: DatabaseViewProps) {
-  const { databaseId, databasePages, databaseProperties, databaseView, setDatabaseView, mutate, setRecentPage } = props;
+  const { databaseId, databasePages, databaseProperties, databaseView, setDatabaseView, mutate, setRecentPage, users } =
+    props;
 
   const viewType = databaseView?.type ?? "list";
   const propertyId = databaseView?.kanban?.property_id;
@@ -36,6 +38,7 @@ export function DatabaseView(props: DatabaseViewProps) {
             databaseView={databaseView}
             setDatabaseView={setDatabaseView}
             setRecentPage={setRecentPage}
+            users={users}
           />
         ))}
       </>
@@ -162,6 +165,7 @@ export function DatabaseView(props: DatabaseViewProps) {
             page={p}
             icon={ds.icon}
             setRecentPage={setRecentPage}
+            users={users}
             customActions={[
               <ActionEditPageProperty
                 key={`kanban-section-${ds.id}-page-${p.id}-custom-edit-status-action`}

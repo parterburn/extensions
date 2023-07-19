@@ -2,7 +2,7 @@ import { Client, isNotionClientError } from "@notionhq/client";
 import { BlockObjectRequest } from "@notionhq/client/build/src/api-endpoints";
 import { showToast, Color, Form, Toast, OAuth, getPreferenceValues, Image, Icon } from "@raycast/api";
 import { markdownToBlocks } from "@tryfabric/martian";
-import { format, formatDistanceToNow, subMinutes } from "date-fns";
+import { format, subMinutes } from "date-fns";
 import fetch from "node-fetch";
 import { NotionToMarkdown } from "notion-to-md";
 
@@ -12,7 +12,6 @@ import {
   DatabaseProperty,
   DatabasePropertyOption,
   User,
-  PagePropertyType,
   supportedPropTypes,
   UnwrapRecord,
   NotionObject,
@@ -669,65 +668,6 @@ export function notionColorToTintColor(notionColor: string | undefined): Color {
   } as Record<string, Color>;
 
   return notionColor ? colorMapper[notionColor] : colorMapper["default"];
-}
-
-export function extractPropertyValue(
-  property?:
-    | PagePropertyType
-    | {
-        type: "string";
-        string: string | null;
-      }
-    | {
-        type: "date";
-        date: {
-          start: string;
-          end: string | null;
-        } | null;
-      }
-    | {
-        type: "number";
-        number: number | null;
-      }
-    | {
-        type: "boolean";
-        boolean: boolean | null;
-      },
-): string | null {
-  if (!property) {
-    return null;
-  }
-
-  switch (property.type) {
-    case "title":
-      return property.title[0] ? property.title[0].plain_text : "Untitled";
-    case "number":
-      return property.number?.toString() || null;
-    case "rich_text":
-      return property.rich_text[0] ? property.rich_text[0].plain_text : null;
-    case "url":
-      return property.url;
-    case "email":
-      return property.email;
-    case "phone_number":
-      return property.phone_number;
-    case "date":
-      return formatDistanceToNow(property.date ? new Date(property.date?.start) : new Date(), { addSuffix: true });
-    case "checkbox":
-      return property.checkbox ? "☑" : "☐";
-    case "select":
-      return property.select?.name || null;
-    case "multi_select":
-      return property.multi_select.map((selection) => selection.name).join(", ");
-    case "string":
-      return property.string;
-    case "boolean":
-      return property.boolean ? "☑" : "☐";
-    case "formula":
-      return extractPropertyValue(property.formula);
-  }
-
-  return null;
 }
 
 export function pageIcon(page: Page): Image.ImageLike {
