@@ -19,8 +19,8 @@
   ],
   "dependencies": {
     "@raycast/api": "^1.39.1",
-    "node-fetch": "^3.2.10",
-    "openpgp": "^5.4.0"
+    "node-fetch": "^3.3.2",
+    "openpgp": "^5.11.3"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.0.0",

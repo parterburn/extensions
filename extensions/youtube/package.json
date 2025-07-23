@@ -140,7 +140,7 @@
   "dependencies": {
     "@google-cloud/local-auth": "^1.0.1",
     "@googleapis/youtube": "^2.0.0",
-    "@raycast/api": "^1.68.1",
+    "@raycast/api": "^1.101.1",
     "@raycast/utils": "^1.12.5",
     "duration-iso-8601": "^1.1.0",
     "he": "^1.2.0",
@@ -159,7 +159,7 @@
     "eslint-config-prettier": "^8.3.0",
     "prettier": "^3.0.0",
     "react": "^18.2.0",
-    "react-devtools": "^4.19.2",
+    "react-devtools": "^6.1.5",
     "typescript": "^4.4.3"
   },
   "scripts": {

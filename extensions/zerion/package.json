@@ -129,7 +129,7 @@
     }
   ],
   "dependencies": {
-    "@raycast/api": "^1.86.1",
+    "@raycast/api": "^1.101.1",
     "@raycast/utils": "^1.18.1",
     "bignumber.js": "^9.1.2",
     "dayjs": "^1.11.13",
