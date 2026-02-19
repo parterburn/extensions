@@ -33,7 +33,7 @@
     "graphql": "^16.6.0",
     "graphql-tag": "^2.12.6",
     "lodash.isempty": "^4.4.0",
-    "wagmi": "^0.6.4"
+    "wagmi": "^3.5.0"
   },
   "devDependencies": {
     "@types/lodash.isempty": "^4.4.7",

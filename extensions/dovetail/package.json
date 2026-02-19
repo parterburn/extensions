@@ -45,7 +45,7 @@
     "@raycast/api": "^1.88.4",
     "@raycast/utils": "^1.17.0",
     "date-fns": "^4.1.0",
-    "qs": "^6.14.0",
+    "qs": "^6.14.2",
     "zod": "^3.24.3"
   },
   "devDependencies": {
