@@ -169,7 +169,7 @@
   "dependencies": {
     "@raycast/api": "^1.103.3",
     "@raycast/utils": "^2.2.0",
-    "axios": "^1.10.0",
+    "axios": "^1.13.5",
     "date-fns": "^4.1.0",
     "file-url": "^4.0.0"
   },
