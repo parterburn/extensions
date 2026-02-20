@@ -55,7 +55,7 @@
   ],
   "dependencies": {
     "@raycast/api": "^1.74.1",
-    "cloudconvert": "^2.3.7",
+    "cloudconvert": "^3.0.0",
     "mime-types": "^2.1.35"
   },
   "devDependencies": {
