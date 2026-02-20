@@ -80,7 +80,7 @@
     "@raycast/api": "^1.103.4",
     "@raycast/utils": "^2.2.1",
     "@types/lodash.groupby": "^4.6.9",
-    "axios": "^1.12.2",
+    "axios": "^1.13.5",
     "date-fns": "^4.1.0",
     "json2md": "^2.0.3",
     "lodash.groupby": "^4.6.0"

@@ -83,7 +83,7 @@
   "dependencies": {
     "@priithaamer/dockerode": "^3.3.1-priithaamer.1",
     "@raycast/api": "^1.39.3",
-    "axios": "^1.12.2",
+    "axios": "^1.13.5",
     "axios-retry": "^3.3.1"
   },
   "overrides": {
