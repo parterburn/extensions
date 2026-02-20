@@ -114,7 +114,7 @@
   "dependencies": {
     "@raycast/api": "^1.94.0",
     "@raycast/utils": "^1.18.0",
-    "axios": "^1.11.0",
+    "axios": "^1.13.5",
     "html-entities": "^2.5.2",
     "mime-types": "^2.1.35"
   },
