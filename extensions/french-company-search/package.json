@@ -21,7 +21,7 @@
   "dependencies": {
     "@raycast/api": "^1.102.3",
     "@raycast/utils": "^2.2.0",
-    "axios": "^1.7.2"
+    "axios": "^1.13.5"
   },
   "preferences": [
     {
