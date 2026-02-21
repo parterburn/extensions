@@ -54,7 +54,7 @@
     "@plausible-analytics/tracker": "^0.4.4",
     "@raycast/api": "^1.93.2",
     "@raycast/utils": "^1.17.0",
-    "axios": "^1.8.2",
+    "axios": "^1.13.5",
     "parse": "^7.0.2"
   },
   "devDependencies": {
