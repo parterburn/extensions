@@ -151,7 +151,7 @@
   "dependencies": {
     "@raycast/api": "^1.104.1",
     "@raycast/utils": "^2.2.2",
-    "axios": "^1.13.2",
+    "axios": "^1.13.5",
     "json2md": "^2.0.3",
     "lodash.debounce": "^4.0.8",
     "lodash.groupby": "^4.6.0",
