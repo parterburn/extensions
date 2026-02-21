@@ -206,7 +206,7 @@
   "dependencies": {
     "@raycast/api": "^1.100.3",
     "@raycast/utils": "^1.17.0",
-    "axios": "^1.10.0",
+    "axios": "^1.13.5",
     "file-url": "^4.0.0",
     "fs-extra": "^11.3.0"
   },
