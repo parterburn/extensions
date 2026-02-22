@@ -92,7 +92,7 @@
   ],
   "dependencies": {
     "@ethereumjs/common": "^3.1.0",
-    "@ethereumjs/evm": "^1.3.0",
+    "@ethereumjs/evm": "^10.1.1",
     "@raycast/api": "^1.51.3",
     "@types/debug": "^4.1.7"
   },
