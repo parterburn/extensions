@@ -23,7 +23,7 @@
   "dependencies": {
     "@raycast/api": "^1.104.3",
     "@raycast/utils": "^2.2.2",
-    "openpgp": "^5.11.3"
+    "openpgp": "^6.3.0"
   },
   "devDependencies": {
     "@openpgp/web-stream-tools": "^0.3.0",
