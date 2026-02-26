@@ -102,7 +102,7 @@
   "dependencies": {
     "@raycast/api": "^1.83.1",
     "@raycast/utils": "^1.17.0",
-    "notdiamond": "^0.3.9"
+    "notdiamond": "^2.2.8"
   },
   "overrides": {
     "@langchain/community": "^0.3.58",
