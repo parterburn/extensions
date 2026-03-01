@@ -104,7 +104,7 @@
     "@raycast/utils": "^2.2.2",
     "@web3-storage/parse-link-header": "^3.1.0",
     "date-fns": "^4.1.0",
-    "fast-xml-parser": "^5.3.2",
+    "fast-xml-parser": "^5.3.8",
     "file-size": "^1.0.0"
   },
   "devDependencies": {
