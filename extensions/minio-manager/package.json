@@ -153,7 +153,7 @@
   "dependencies": {
     "@raycast/api": "^1.103.10",
     "@raycast/utils": "^1.19.1",
-    "minio": "^8.0.5"
+    "minio": "^8.0.7"
   },
   "devDependencies": {
     "@raycast/eslint-config": "^2.0.4",
