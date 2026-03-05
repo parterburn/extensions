@@ -201,7 +201,7 @@
     "@raycast/api": "^1.104.3",
     "@raycast/utils": "^2.2.2",
     "cheerio": "^1.2.0",
-    "fast-xml-parser": "^5.3.4",
+    "fast-xml-parser": "^5.3.8",
     "got": "^14.6.6",
     "mac-say": "^0.3.3",
     "pinyin-pro": "^3.28.0",
