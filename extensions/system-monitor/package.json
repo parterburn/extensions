@@ -92,7 +92,7 @@
     "@raycast/utils": "^2.2.2",
     "os-utils": "0.0.14",
     "plist": "^3.1.0",
-    "systeminformation": "^5.22.7",
+    "systeminformation": "^5.30.8",
     "usehooks-ts": "^3.1.0",
     "@raycast/api": "^1.104.3"
   },
