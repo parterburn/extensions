@@ -13,6 +13,7 @@ const NOTION_TOKEN_URL = "https://notion.oauth.raycast.com/token";
 
 const notionClients = new Map<string, { token: string; client: Client }>();
 const notionOAuthServices = new Map<NotionAccountId, { label: string; service: OAuthService }>();
+const authorizeInFlight = new Map<NotionAccountId, Promise<string>>();
 
 function getAuthPreferences() {
   const preferences = getPreferenceValues<Preferences>();
@@ -22,6 +23,18 @@ function getAuthPreferences() {
     account1Label: preferences.notion_account_1_label?.trim(),
     account2Label: preferences.notion_account_2_label?.trim(),
   };
+}
+
+function sanitizeAccountLabel(label: string) {
+  return label
+    .normalize("NFKC")
+    .replace(/\p{Extended_Pictographic}/gu, "")
+    .replace(/\p{Emoji_Modifier}/gu, "")
+    .replace(/[\u200D\uFE0E\uFE0F\u20E3]/g, "")
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
+    .replace(/[^\u0020-\u00FF]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function buildAccountLabel(label: string | undefined, fallback: string) {
@@ -60,12 +73,18 @@ export function getNotionAccountLabel(accountId?: NotionAccountId) {
 
 export function resolveAccountIdFromLabel(label?: string): NotionAccountId | undefined {
   if (!label) return undefined;
-  const normalized = label.trim().toLowerCase();
+  const trimmed = label.trim().toLowerCase();
+  const sanitized = sanitizeAccountLabel(label).toLowerCase();
   const accounts = getNotionAccounts();
-  const matched = accounts.find((account) => account.label.trim().toLowerCase() === normalized);
+  const matched = accounts.find((account) => {
+    const accountLabel = account.label.trim().toLowerCase();
+    if (accountLabel === trimmed) return true;
+    const accountSanitized = sanitizeAccountLabel(account.label).toLowerCase();
+    return sanitized.length > 0 && accountSanitized === sanitized;
+  });
   if (matched) return matched.id;
-  if (normalized === "account 1" || normalized === "account1" || normalized === "1") return "account-1";
-  if (normalized === "account 2" || normalized === "account2" || normalized === "2") return "account-2";
+  if (trimmed === "account 1" || trimmed === "account1" || trimmed === "1" || sanitized === "account 1") return "account-1";
+  if (trimmed === "account 2" || trimmed === "account2" || trimmed === "2" || sanitized === "account 2") return "account-2";
   return undefined;
 }
 
@@ -109,10 +128,16 @@ function getCachedClient(cacheKey: string, token: string) {
   return client;
 }
 
+function oauthProviderName(account: NotionAccount) {
+  const safeLabel = sanitizeAccountLabel(account.label);
+  const label = safeLabel.length > 0 ? safeLabel : account.id === "account-2" ? "Account 2" : "Account 1";
+  return `Notion (${label})`;
+}
+
 function createOAuthClient(account: NotionAccount) {
   return new OAuth.PKCEClient({
     redirectMethod: OAuth.RedirectMethod.Web,
-    providerName: `Notion (${account.label})`,
+    providerName: oauthProviderName(account),
     providerIcon: "notion-logo.png",
     providerId: `notion-${account.id}`,
     description: "Connect your Notion account",
@@ -157,6 +182,17 @@ export async function getNotionClient(accountId?: NotionAccountId) {
 
   const resolvedAccountId = accountId ?? (await getActiveAccountId());
   const account = getNotionAccount(resolvedAccountId) ?? { id: "account-1", label: "Account 1" };
-  const token = await getCachedOAuthService(account).authorize();
+  const existingAuthorize = authorizeInFlight.get(account.id);
+  const authorize =
+    existingAuthorize ??
+    getCachedOAuthService(account)
+      .authorize()
+      .finally(() => {
+        authorizeInFlight.delete(account.id);
+      });
+  if (!existingAuthorize) {
+    authorizeInFlight.set(account.id, authorize);
+  }
+  const token = await authorize;
   return getCachedClient(account.id, token);
 }
